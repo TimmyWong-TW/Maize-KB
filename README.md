@@ -37,31 +37,37 @@ Note: incomplete documentation without full procedure for reference only.
    ```sh
    whisperx --model large-v3 --output_format json --task transcribe --language zh --align_model StevenLimcorn/wav2vec2-xls-r-300m-zh-TW --initial_prompt "弟兄姊妹平安，我們一起來思想。繁體中文，臺灣國語。" --output_dir /data/transcripts /data/audios/*.m4a
    ```
-1. 需要時，以語音停頓時間分段，然後統一標點符號，用以細分時間供字幕使用。  
-   Optionally, arrange into paragraphs by pauses in speech, and then unify punctuations, to separate clauses for captioning.
 1. 將文本轉換成臺灣中文。  
    Convert transcripts into Chinese (Taiwan).
-   ```sh
-   npm install opencc
+   ```Dockerfile
+   FROM node:lts-alpine
+   RUN apk add python3 make g++
+   WORKDIR /app
+   RUN npm i opencc
    ```
-   ```ts
+   ```mjs
    import { promises as fs } from 'fs';
-   import { OpenCC } from 'opencc';
-   async function cc() {
-       const converter = new OpenCC('s2tw.json');
-       const { segments } = JSON.parse(await fs.readFile('whisperx/file.json', 'utf-8'));
-       await fs.writeFile('transcripts/file.tsv', [
+   import OpenCC from 'opencc';
+   import glob from 'glob';
+   import path from 'path';
+   const converter = new OpenCC('s2tw.json');
+   await Promise.all(glob.sync('/data/whisperx/**/*.json').map(async json => {
+       const { segments } = JSON.parse(await fs.readFile(json, 'utf-8')),
+           tsv = path.join('/data/tsv', path.relative('/data/whisperx', json).replace(/.json$/, '.tsv'));
+       await fs.mkdir(path.dirname(tsv), { recursive: true });
+       await fs.writeFile(tsv, [
            'start\tend\ttext',
-           ...Promise.all(segments.map(async ({ start, end, text }) => [
+           ...await Promise.all(segments.map(async ({ start, end, text }) => [
                start,
                end,
                await converter.convertPromise(text)
            ].join('\t')))
        ].join('\n'));
-   }
-   cc();
+   }));
    ```
 1. 使用字幕編輯工具修正文本、大量更正常見錯別字。  
    Proofread transcripts with a subtitle editor, fix common errors.
+1. 需要時，以語音停頓時間分段，然後統一標點符號，繼而重新對齊音頻時間用以供字幕使用。  
+   Optionally, arrange into paragraphs by pauses in speech, and then unify punctuations, before re-alignment of clauses for captioning.
 1. 分門別類，標註講員。  
    Classify, and diarize speakers.
