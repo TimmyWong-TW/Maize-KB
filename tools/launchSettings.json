@@ -1,0 +1,33 @@
+{
+  "profiles": {
+    "VimeoDownloader": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "None",
+      "composeLaunchServiceName": "vimeo-downloader",
+      "serviceActions": {
+        "chinese-converter": "DoNotStart",
+        "transcriber": "DoNotStart",
+        "vimeo-downloader": "StartDebugging"
+      }
+    },
+    "Transcriber": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "chinese-converter": "DoNotStart",
+        "transcriber": "StartWithoutDebugging",
+        "vimeo-downloader": "DoNotStart"
+      }
+    },
+    "ChineseConverter": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "chinese-converter": "StartWithoutDebugging",
+        "transcriber": "DoNotStart",
+        "vimeo-downloader": "DoNotStart"
+      }
+    }
+  }
+}

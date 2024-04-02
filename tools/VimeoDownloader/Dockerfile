@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/nightly/runtime:8.0-alpine AS base
+RUN apk add ffmpeg
 USER app
 WORKDIR /app
-RUN apk add ffmpeg
 
 FROM mcr.microsoft.com/dotnet/nightly/sdk:8.0-alpine-aot AS build
 RUN apk add clang zlib-dev
