@@ -18,52 +18,25 @@
 注意：以下筆記僅供參考，並非實際記錄完整步驟。  
 Note: incomplete documentation without full procedure for reference only.
 
-1. 使用適當工具大量下載音頻及字幕。若來源同時包含視頻及音頻，可刪除視頻部分以節省儲存空間。  
-   Bulk download audios and captions with appropriate tools. In case video is bundled with audio, the video part may be removed to save storage space.
+```sh
+cd tools
+docker compose build [SERVICE...]
+```
+
+1. 大量下載音頻及字幕。  
+   Bulk download audios and captions.
    ```sh
-   ffmpeg -i "videos/file.mp4" -vn -c copy "audios/file.m4a" && rm "videos/file.mp4"
+   docker compose run --rm vimeo-downloader
    ```
 1. 若來源缺乏字幕，辨識漢語以生成中文文本並對齊音頻時間。  
    When source lacks captions, transcribe Mandarin to Chinese and align with audio.
-   ```Dockerfile
-   FROM pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
-   RUN apt-get update && apt-get install -y git && apt-get clean && rm -rf /var/lib/apt/lists/*
-   RUN pip install git+https://github.com/m-bain/whisperx.git
-   ```
    ```sh
-   docker build --tag whisperx .
-   docker run --rm -it -v whispers:/root/.cache -v ./:/data --gpus all whisperx
-   ```
-   ```sh
-   whisperx --model large-v3 --output_format json --task transcribe --language zh --align_model StevenLimcorn/wav2vec2-xls-r-300m-zh-TW --initial_prompt "弟兄姊妹平安，我們一起來思想。繁體中文，臺灣國語。" --output_dir /data/transcripts /data/audios/*.m4a
+   docker compose run --rm transcriber
    ```
 1. 將文本轉換成臺灣中文。  
    Convert transcripts into Chinese (Taiwan).
-   ```Dockerfile
-   FROM node:lts-alpine
-   RUN apk add python3 make g++
-   WORKDIR /app
-   RUN npm i opencc
-   ```
-   ```mjs
-   import { promises as fs } from 'fs';
-   import OpenCC from 'opencc';
-   import glob from 'glob';
-   import path from 'path';
-   const converter = new OpenCC('s2tw.json');
-   await Promise.all(glob.sync('/data/whisperx/**/*.json').map(async json => {
-       const { segments } = JSON.parse(await fs.readFile(json, 'utf-8')),
-           tsv = path.join('/data/tsv', path.relative('/data/whisperx', json).replace(/.json$/, '.tsv'));
-       await fs.mkdir(path.dirname(tsv), { recursive: true });
-       await fs.writeFile(tsv, [
-           'start\tend\ttext',
-           ...await Promise.all(segments.map(async ({ start, end, text }) => [
-               start,
-               end,
-               await converter.convertPromise(text)
-           ].join('\t')))
-       ].join('\n'));
-   }));
+   ```sh
+   docker compose run --rm chinese-converter
    ```
 1. 使用字幕編輯工具修正文本、大量更正常見錯別字。  
    Proofread transcripts with a subtitle editor, fix common errors.

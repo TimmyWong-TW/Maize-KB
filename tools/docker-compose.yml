@@ -1,0 +1,42 @@
+version: '3.4'
+name: maize-kb-tools
+services:
+  vimeo-downloader:
+    scale: 0
+    build:
+      context: .
+      dockerfile: VimeoDownloader/Dockerfile
+    volumes:
+      - ../:/data
+    working_dir: /data/source/vimeo/淡江教會
+    environment:
+      USER_ID: '2178983'
+      PROFILE_SECTION_PAGE: '1'
+      VIDEOS_PAGE: '1'
+    deploy:
+      resources:
+        limits:
+          cpus: '8.0' # limit parallel downloads, adjust by available memory and bandwidth
+  transcriber:
+    scale: 0
+    build:
+      context: .
+      dockerfile: Transcriber/Dockerfile
+    volumes:
+      - ../:/data
+    entrypoint: /bin/bash -O globstar -c
+    command: whisperx --model large-v3 --output_format json --task transcribe --language zh --align_model StevenLimcorn/wav2vec2-xls-r-300m-zh-TW --initial_prompt "弟兄姊妹平安，我們一起來思想。繁體中文，臺灣國語。" --output_dir /data/whisperx /data/source/**/*.m4a
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+  chinese-converter:
+    scale: 0
+    build:
+      context: .
+      dockerfile: ChineseConverter/Dockerfile
+    volumes:
+      - ../:/data

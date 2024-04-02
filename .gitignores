@@ -1,8 +1,0 @@
-*.mp4
-*.m4a
-[Dd]esktop.ini
-[Tt]humbs.db
-.DS_Store/
-node_modules/
-*.vs/
-*.userprefs
