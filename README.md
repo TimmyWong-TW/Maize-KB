@@ -38,8 +38,8 @@ docker compose build [SERVICE...]
    ```sh
    docker compose run --rm chinese-converter
    ```
-1. 使用字幕編輯工具修正文本、大量更正常見錯別字。  
-   Proofread transcripts with a subtitle editor, fix common errors.
+1. 使用字幕編輯工具校對文本以便大量更正。  
+   Proofread transcripts with a subtitle editor to identify misrecognitions for batch correction.
 1. 需要時，以語音停頓時間分段，然後統一標點符號，繼而重新對齊音頻時間用以供字幕使用。  
    Optionally, arrange into paragraphs by pauses in speech, and then unify punctuations, before re-alignment of clauses for captioning.
 1. 分門別類，標註講員。  
