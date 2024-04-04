@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import OpenCC from 'opencc';
-import glob from 'glob';
+import { glob } from 'glob';
 import path from 'path';
 const converter = new OpenCC('s2tw.json');
 await Promise.all(glob.sync('/data/whisperx/**/*.json').map(async json => {

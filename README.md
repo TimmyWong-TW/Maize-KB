@@ -19,8 +19,9 @@
 Note: incomplete documentation without full procedure for reference only.
 
 ```sh
-cd tools
-docker compose build [SERVICE...]
+git clone --depth 1 https://github.com/TimmyWong-TW/Maize-KB.git
+cd Maize-KB/tools
+docker compose build
 ```
 
 1. 大量下載音頻及字幕。  
@@ -32,6 +33,7 @@ docker compose build [SERVICE...]
    When source lacks captions, transcribe Mandarin to Chinese and align with audio.
    ```sh
    docker compose run --rm transcriber
+   docker compose run --rm whisperx-json-trimmer
    ```
 1. 將文本轉換成臺灣中文。  
    Convert transcripts into Chinese (Taiwan).

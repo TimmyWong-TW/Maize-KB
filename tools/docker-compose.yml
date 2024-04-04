@@ -33,6 +33,13 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+  whisperx-json-trimmer:
+    scale: 0
+    build:
+      context: .
+      dockerfile: WhisperXJsonTrimmer/Dockerfile
+    volumes:
+      - ../:/data
   chinese-converter:
     scale: 0
     build:
