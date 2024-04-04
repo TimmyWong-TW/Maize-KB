@@ -1,0 +1,27 @@
+html,
+body {
+    background-color: #333;
+    color: #ccc;
+    margin: 0;
+    height: 100%;
+}
+
+main {
+    height: 100%;
+    overflow-y: auto;
+}
+
+td {
+    text-align: right;
+    vertical-align: top;
+}
+
+td:last-child {
+    text-align: left;
+}
+
+audio {
+    width: 100%;
+    position: sticky;
+    bottom: 0;
+}
