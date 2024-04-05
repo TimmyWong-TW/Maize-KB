@@ -9,48 +9,45 @@
     // }
     const vimeoId = location.hash?.match(/(?<=\/vimeo\/.+\/)\d+(?=(=|%3D)[^\/]+$)/)?.[0];
     if (vimeoId) {
-        const [main] = document.getElementsByTagName("main"), [{ list: transcript, words }, player] = await Promise.all([
-            fetch(location.hash.substring(1))
-                .then(response => response.json())
-                .then(({ segments }) => {
-                    const list = document.createElement("div");
-                    return {
-                        list,
-                        words: segments.map(({ text, start, end, words }) => {
-                            const line = document.createElement("div");
-                            list.appendChild(line);
-                            return words.map(({ word, start, end, score }) => {
-                                const span = document.createElement("span");
-                                span.textContent = word;
-                                if (start || end) {
-                                    span.segment = { start, end };
-                                }
-                                line.appendChild(span);
-                                return span;
-                            });
-                        }).reduce((a, b) => a.concat(b), [])
-                    };
-                }),
+        const [{ segments }, player] = await Promise.all([
+            fetch(location.hash.substring(1)).then(response => response.json()),
             fetch("https://corsproxy.io/?" + encodeURIComponent(`https://player.vimeo.com/video/${vimeoId}/config`))
                 .then(response => response.json())
-                .then(({ request: { files: { progressive } } }) => progressive.reduce((a, b) => b.profile > a.profile ? a : b, {}).url)
-                .then(url => new Promise((resolve, reject) => {
-                    const audio = new Audio();
+                .then(({ request: { files: { progressive } } }) => new Promise((resolve, reject) => {
+                    const audio = new Audio(progressive.reduce((a, b) => b.profile > a.profile ? a : b, {}).url);
                     audio.controls = true;
                     audio.addEventListener("canplaythrough", e => resolve(e.target));
                     audio.addEventListener("error", e => reject(e.error));
-                    audio.src = url;
                     return audio;
                 }))
-        ]);
-        transcript.addEventListener("click", e => {
-            let span = e.target;
-            while (span) {
-                if (span.segment) {
-                    player.currentTime = span.segment.start;
-                    return;
+        ]), transcript = segments.map(({ text, start, end, words }) => {
+            const line = document.createElement("div");
+            if (start || end) {
+                line.segment = { start, end };
+            }
+            words.map(({ word, start, end, score }) => {
+                const span = document.createElement("span");
+                span.textContent = word;
+                if (start || end) {
+                    span.segment = { start, end };
                 }
-                span = span.nextElementSibling || span.parentElement?.nextElementSibling?.firstElementChild;
+                line.appendChild(span);
+                return span;
+            });
+            return line;
+        }).reduce((t, line) => {
+            t.appendChild(line);
+            return t;
+        }, document.createElement("div")), main = document.querySelector("main");
+        transcript.addEventListener("click", e => {
+            if (!getSelection()?.toString()) {
+                let span = e.target;
+                while (span && !span.segment) {
+                    span = span.nextElementSibling || span.parentElement?.nextElementSibling?.firstElementChild;
+                }
+                if (span?.segment) {
+                    player.currentTime = span.segment.start;
+                }
             }
         });
         transcript.addEventListener("dblclick", e => player.play());
@@ -59,25 +56,24 @@
             clearTimeout(updateTimeout);
             updateTimeout = undefined;
             const t = e.target.currentTime;
-            for (const lines of transcript.children) {
-                lines.classList.remove("current");
-            }
-            for (const span of words) {
-                if (span.segment && span.segment.start <= t && span.segment.end > t) {
-                    span.classList.add("current");
-                    span.parentElement.classList.add("current");
-                    const { top, bottom } = span.getBoundingClientRect();
-                    if (top < 0 || bottom > innerHeight - player.getBoundingClientRect().height) {
-                        span.scrollIntoView({
-                            behavior: "instant",
-                            block: "center"
-                        });
+            for (const line of transcript.children) {
+                line.classList.toggle("current", line.segment && line.segment.start <= t && line.segment.end > t);
+                for (const span of line.children) {
+                    if (span.segment && span.segment.start <= t && span.segment.end > t) {
+                        span.classList.add("current");
+                        const { top, bottom } = span.getBoundingClientRect();
+                        if (top < transcript.parentElement.getBoundingClientRect().top || bottom > player.getBoundingClientRect().top) {
+                            span.scrollIntoView({
+                                behavior: "instant",
+                                block: "center"
+                            });
+                        }
+                        if (!player.paused) {
+                            updateTimeout = setTimeout(update.bind(this, e), (span.segment.end - t) * 1000);
+                        }
+                    } else {
+                        span.classList.remove("current");
                     }
-                    if (!player.paused) {
-                        updateTimeout = setTimeout(update.bind(this, e), (span.segment.end - t) * 1000);
-                    }
-                } else {
-                    span.classList.remove("current");
                 }
             }
         });
