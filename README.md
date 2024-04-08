@@ -27,12 +27,12 @@ docker compose build
 1. 大量下載音頻及字幕。  
    Bulk download audios and captions.
    ```sh
-   docker compose run --rm vimeo-downloader
+   docker compose run --rm -d vimeo-downloader
    ```
 1. 若來源缺乏字幕，辨識漢語以生成中文文本並對齊音頻時間。  
    When source lacks captions, transcribe Mandarin to Chinese and align with audio.
    ```sh
-   docker compose run --rm transcriber
+   docker compose run --rm -d transcriber
    docker compose run --rm whisperx-json-trimmer
    ```
 1. 將文本轉換成臺灣中文。  

@@ -402,3 +402,4 @@ FodyWeavers.xsd
 .DS_Store/
 
 source/
+secrets.env

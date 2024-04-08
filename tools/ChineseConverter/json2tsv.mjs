@@ -4,15 +4,19 @@ import { glob } from 'glob';
 import path from 'path';
 const converter = new OpenCC('s2tw.json');
 await Promise.all(glob.sync('/data/whisperx/**/*.json').map(async json => {
-    const { segments } = JSON.parse(await fs.readFile(json, 'utf-8')),
-        tsv = path.join('/data/tsv', path.relative('/data/whisperx', json).replace(/.json$/, '.tsv'));
+    const tsv = path.join('/data/tsv', path.relative('/data/whisperx', json).replace(/.json$/, '.tsv')),
+        tmp = tsv + '~';
     await fs.mkdir(path.dirname(tsv), { recursive: true });
-    await fs.writeFile(tsv, [
-        'start\tend\ttext',
-        ...await Promise.all(segments.map(async ({ start, end, text }) => [
-            start,
-            end,
-            await converter.convertPromise(text)
-        ].join('\t')))
-    ].join('\n'));
+    if (!fs.access(tsv, fs.constants.W_OK)) {
+        const { segments } = JSON.parse(await fs.readFile(json, 'utf-8'));
+        await fs.writeFile(tmp, [
+            'start\tend\ttext',
+            ...await Promise.all(segments.map(async ({ start, end, text }) => [
+                start,
+                end,
+                await converter.convertPromise(text)
+            ].join('\t')))
+        ].join('\n'));
+        await fs.rename(tmp, tsv);
+    }
 }));

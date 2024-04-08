@@ -47,3 +47,12 @@ services:
       dockerfile: ChineseConverter/Dockerfile
     volumes:
       - ../:/data
+  descriptor:
+    scale: 0
+    build:
+      context: .
+      dockerfile: Descriptor/Dockerfile
+    env_file:
+      - secrets.env
+    volumes:
+      - ../:/data
