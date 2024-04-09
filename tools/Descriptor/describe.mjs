@@ -13,7 +13,7 @@ process.on('SIGTERM', cancel);
 
 const RPM = 15, requestInterval = 6e4 / RPM, TPM = 32000, timeouts = [];
 let lastRequest = Date.now() - requestInterval;
-let accumulatedTokens = 0, resetTokens, lastTokenReset;
+let accumulatedTokens, resetTokens, lastTokenReset;
 
 async function describe(text) {
     const interval = Date.now() - lastRequest;
@@ -31,6 +31,8 @@ async function describe(text) {
             accumulatedTokens = 0;
             lastTokenReset = Date.now();
         }, 6e4);
+        accumulatedTokens = 0;
+        lastTokenReset = Date.now();
     }
     const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
     const model = genAI.getGenerativeModel({ model: 'gemini-1.0-pro' });
@@ -38,7 +40,7 @@ async function describe(text) {
         temperature: 0,
         topK: 1,
         topP: 1,
-        maxOutputTokens: 512,
+        maxOutputTokens: 2048,
     }, safetySettings = [
         HarmCategory.HARM_CATEGORY_HARASSMENT,
         HarmCategory.HARM_CATEGORY_HATE_SPEECH,
@@ -93,6 +95,7 @@ for (const tsv of glob.sync('/data/tsv/**/*.tsv')) {
                 try {
                     overview = await describe(transcript);
                 } catch (e) {
+                    // TODO: fall back to OpenAI GPT?
                     console.error(e);
                     console.error(tsv);
                     await fs.appendFile('/data/overview/error.log', tsv + '\n');
@@ -112,3 +115,4 @@ for (const tsv of glob.sync('/data/tsv/**/*.tsv')) {
         }
     }
 }
+clearInterval(resetTokens);
