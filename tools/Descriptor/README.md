@@ -14,4 +14,4 @@ docker compose --rm -d descriptor
 
 Some content could not pass the moderation of Google AI, while some output could exceed token budget.
 
-Refer to `overview/error.log` for files that require manual actions. Microsoft Copilot or another generative AI tool may be used manually.
+Refer to `overview/error.log` for files that require manual actions. In case Gemini 1.5 Pro also refuses to generate useful output, `gpt-4-turbo-2024-04-09` or another large language model may be used manually.
