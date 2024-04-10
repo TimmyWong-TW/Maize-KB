@@ -46,3 +46,32 @@ docker compose build
    Optionally, arrange into paragraphs by pauses in speech, and then unify punctuations, before re-alignment of clauses for captioning.
 1. 分門別類，標註講員。  
    Classify, and diarize speakers.
+
+## 內嵌 Embeddings
+
+首次部署前先暫存模型。  
+Cache the model before first run.
+```sh
+docker compose run --rm sentence-transformer-cache
+```
+
+保持服務在背景運行。  
+Keep the service up in the background.
+```sh
+docker compose up -d sentence-transformer
+```
+
+曝露埠以供外部連接。  
+Expose ports for external use.
+```sh
+docker compose -f docker-compose.yml -f docker-compose.override.yml up -d sentence-transformer
+```
+
+要求範例：  
+Example request:
+```http
+POST /v1/embeddings
+Content-Type: application/json
+
+{"input":["First sentence.","Another sentence."]}
+```

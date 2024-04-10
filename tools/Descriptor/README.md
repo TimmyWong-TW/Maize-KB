@@ -6,7 +6,7 @@ The outline from the output may then be used for semantic chunking.
 Include API key for Google Generative AI in `tools/secrets.env` as `GOOGLE_AI_API_KEY` when using with Docker Compose.
 
 ```sh
-cd tools
+cd Maize-KB/tools
 docker compose --rm -d descriptor
 ```
 

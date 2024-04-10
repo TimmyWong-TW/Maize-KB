@@ -1,6 +1,22 @@
 version: '3.4'
 name: maize-kb-tools
 services:
+  sentence-transformer:
+    build:
+      context: .
+      dockerfile: SentenceTransformer/Dockerfile
+    volumes:
+      - cache:/root/.cache:ro
+    cpuset: 0-3
+  # one-off tools below
+  sentence-transformer-cache:
+    scale: 0
+    build:
+      context: .
+      dockerfile: SentenceTransformer/Dockerfile
+    entrypoint: python3 main.py
+    volumes:
+      - cache:/root/.cache
   vimeo-downloader:
     scale: 0
     build:
@@ -23,6 +39,7 @@ services:
       context: .
       dockerfile: Transcriber/Dockerfile
     volumes:
+      - cache:/root/.cache
       - ../:/data
     entrypoint: /bin/bash -O globstar -c
     command: whisperx --model large-v3 --output_format json --task transcribe --language zh --align_model StevenLimcorn/wav2vec2-xls-r-300m-zh-TW --initial_prompt "弟兄姊妹平安，我們一起來思想。繁體中文，臺灣國語。" --output_dir /data/whisperx /data/source/**/*.m4a
@@ -32,7 +49,7 @@ services:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]
   whisperx-json-trimmer:
     scale: 0
     build:
@@ -56,3 +73,5 @@ services:
       - secrets.env
     volumes:
       - ../:/data
+volumes:
+  cache:
