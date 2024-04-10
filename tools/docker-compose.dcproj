@@ -5,6 +5,7 @@
     <DockerTargetOS>Linux</DockerTargetOS>
     <DockerPublishLocally>False</DockerPublishLocally>
     <ProjectGuid>f8f1ab75-c8d0-4f4d-8b1a-86b02bc410d7</ProjectGuid>
+    <DockerComposeProjectName>maize-kb-tools</DockerComposeProjectName>
   </PropertyGroup>
   <ItemGroup>
     <None Include="docker-compose.override.yml">

@@ -1,4 +1,4 @@
 services:
-  sentence-transformer:
+  embedder:
     ports:
       - 7883:80
