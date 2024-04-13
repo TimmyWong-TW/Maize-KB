@@ -13,14 +13,16 @@
             fetch(location.hash.substring(1)).then(response => response.json()),
             fetch("https://corsproxy.io/?" + encodeURIComponent(`https://player.vimeo.com/video/${vimeoId}/config`))
                 .then(response => response.json())
-                .then(({ request: { files: { hls: { cdns, default_cdn } } } }) => new Promise((resolve, reject) => {
-                    const audio = new Audio(), hls = new Hls();
+                .then(({ request: { files: { dash: { cdns, default_cdn } } } }) => new Promise((resolve, reject) => {
+                    const audio = new Audio();
                     audio.controls = true;
                     audio.addEventListener("canplaythrough", e => resolve(e.target));
                     audio.addEventListener("error", e => reject(e.target.error));
-                    hls.loadSource(cdns[default_cdn].url);
-                    hls.attachMedia(audio);
-                    return audio;
+                    try {
+                        dashjs.MediaPlayer().create().initialize(audio, cdns[default_cdn].url.replace(/\bjson\b/, 'mpd'), true);
+                    } catch (e) {
+                        reject(e);
+                    }
                 }))
         ]), transcript = segments.map(({ text, start, end, words }) => {
             const line = document.createElement("div");
