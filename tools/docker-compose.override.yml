@@ -2,3 +2,9 @@ services:
   embedder:
     ports:
       - 7883:80
+  vimeo-downloader:
+    scale: 1
+  resegmenter:
+    scale: 1
+  semantic-chunker:
+    scale: 1

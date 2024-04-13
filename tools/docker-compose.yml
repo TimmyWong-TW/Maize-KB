@@ -2,6 +2,7 @@ version: '3.4'
 name: maize-kb-tools
 services:
   embedder:
+    image: ${DOCKER_REGISTRY-}embedder
     build:
       context: .
       dockerfile: Embedder/Dockerfile
@@ -18,6 +19,7 @@ services:
       - huggingface:/root/.cache/huggingface
   vimeo-downloader:
     scale: 0
+    image: ${DOCKER_REGISTRY-}vimeo-downloader
     build:
       context: .
       dockerfile: VimeoDownloader/Dockerfile
@@ -56,6 +58,14 @@ services:
       dockerfile: WhisperXJsonTrimmer/Dockerfile
     volumes:
       - ../:/data
+  resegmenter:
+    scale: 0
+    image: ${DOCKER_REGISTRY-}resegmenter
+    build:
+      context: .
+      dockerfile: Resegmenter/Dockerfile
+    volumes:
+      - ../:/data
   chinese-converter:
     scale: 0
     build:
@@ -72,6 +82,19 @@ services:
       - secrets.env
     volumes:
       - ../:/data
+  semantic-chunker:
+    scale: 0
+    image: ${DOCKER_REGISTRY-}semantic-chunker
+    build:
+      context: .
+      dockerfile: SemanticChunker/Dockerfile
+    volumes:
+      - ../:/data
+    environment:
+      EMBEDDER_HOST: http://embedder/
+
 volumes:
   huggingface:
     external: true
+
+

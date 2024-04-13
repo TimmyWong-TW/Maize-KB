@@ -19,23 +19,3 @@
   ```sh
   docker compose -f docker-compose.yml -f docker-compose.override.yml up -d embedder
   ```
-
-要求範例：  
-Example requests:
-```http
-@EmbedderHost=http://localhost:7883
-
-POST {{EmbedderHost}}/v1/embeddings
-Content-Type: application/json
-
-{"input":["First sentence.","Another sentence."],"encoding_format":"base64"}
-
-###
-
-POST {{EmbedderHost}}/v1/relevances
-Content-Type: application/json
-
-{"input":[["Question?","First answer."],["Question?","Second answer."]]}
-
-###
-```

@@ -89,7 +89,7 @@ for (const tsv of glob.sync('/data/tsv/**/*.tsv')) {
             const tmp = md + '~', transcript = (await fs.readFile(tsv, 'utf-8'))
                 .split('\n').slice(1)
                 .map(l => l.split('\t')[2])
-                .join('\n');
+                .join(' ');
             if (transcript.length > 0) {
                 let overview;
                 try {

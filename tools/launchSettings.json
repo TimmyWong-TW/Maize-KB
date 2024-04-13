@@ -8,7 +8,13 @@
       "serviceActions": {
         "chinese-converter": "DoNotStart",
         "transcriber": "DoNotStart",
-        "vimeo-downloader": "StartDebugging"
+        "vimeo-downloader": "StartDebugging",
+        "semantic-chunker": "DoNotStart",
+        "descriptor": "DoNotStart",
+        "embedder": "StartWithoutDebugging",
+        "embedder-cache": "DoNotStart",
+        "whisperx-json-trimmer": "DoNotStart",
+        "resegmenter": "DoNotStart"
       }
     },
     "Transcriber": {
@@ -17,7 +23,30 @@
       "serviceActions": {
         "chinese-converter": "DoNotStart",
         "transcriber": "StartWithoutDebugging",
-        "vimeo-downloader": "DoNotStart"
+        "vimeo-downloader": "DoNotStart",
+        "semantic-chunker": "DoNotStart",
+        "descriptor": "DoNotStart",
+        "embedder": "StartWithoutDebugging",
+        "embedder-cache": "DoNotStart",
+        "whisperx-json-trimmer": "DoNotStart",
+        "resegmenter": "DoNotStart"
+      }
+    },
+    "Resegmenter": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "None",
+      "composeLaunchServiceName": "resegmenter",
+      "serviceActions": {
+        "chinese-converter": "DoNotStart",
+        "descriptor": "DoNotStart",
+        "embedder": "StartWithoutDebugging",
+        "embedder-cache": "DoNotStart",
+        "resegmenter": "StartDebugging",
+        "semantic-chunker": "DoNotStart",
+        "transcriber": "DoNotStart",
+        "vimeo-downloader": "DoNotStart",
+        "whisperx-json-trimmer": "DoNotStart"
       }
     },
     "ChineseConverter": {
@@ -26,7 +55,30 @@
       "serviceActions": {
         "chinese-converter": "StartWithoutDebugging",
         "transcriber": "DoNotStart",
-        "vimeo-downloader": "DoNotStart"
+        "vimeo-downloader": "DoNotStart",
+        "semantic-chunker": "DoNotStart",
+        "descriptor": "DoNotStart",
+        "embedder": "StartWithoutDebugging",
+        "embedder-cache": "DoNotStart",
+        "whisperx-json-trimmer": "DoNotStart",
+        "resegmenter": "DoNotStart"
+      }
+    },
+    "SemanticChunker": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "None",
+      "composeLaunchServiceName": "semantic-chunker",
+      "serviceActions": {
+        "chinese-converter": "DoNotStart",
+        "descriptor": "DoNotStart",
+        "embedder": "StartWithoutDebugging",
+        "embedder-cache": "DoNotStart",
+        "semantic-chunker": "StartDebugging",
+        "transcriber": "DoNotStart",
+        "vimeo-downloader": "DoNotStart",
+        "whisperx-json-trimmer": "DoNotStart",
+        "resegmenter": "DoNotStart"
       }
     }
   }

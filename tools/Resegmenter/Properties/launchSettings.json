@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Resegmenter": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

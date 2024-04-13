@@ -36,9 +36,10 @@ docker compose build
    ```sh
    docker compose run --rm -d transcriber
    docker compose run --rm whisperx-json-trimmer
+   docker compose run --rm resegmenter
    ```
-1. 將文本轉換成臺灣中文。  
-   Convert transcripts into Chinese (Taiwan).
+1. 將文本轉換成臺灣中文，然後自行校對。  
+   Convert transcripts into Chinese (Taiwan), and then proofread manually.
    ```sh
    docker compose run --rm chinese-converter
    ```
