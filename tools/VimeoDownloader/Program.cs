@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -18,13 +17,13 @@ Console.CancelKeyPress += (s, e) =>
     e.Cancel = true;
 };
 Console.OutputEncoding = Encoding.UTF8;
-using var apiHttp = new HttpClient()
+using HttpClient apiHttp = new()
 {
     BaseAddress = new("https://api.vimeo.com")
 };
 async Task NextTokenAsync(CancellationToken cancellationToken = default)
 {
-    using var tokenHttp = new HttpClient()
+    using HttpClient tokenHttp = new()
     {
         BaseAddress = new("https://vimeo.com"),
         DefaultRequestHeaders =
@@ -60,145 +59,155 @@ async Task<T?> GetAsync<T>(string url, JsonTypeInfo<T> type, CancellationToken c
         }
     }
 }
-async IAsyncEnumerable<KeyValuePair<string, string>> EnumerateAsync([EnumeratorCancellation] CancellationToken cancellationToken)
-{
-    for (var nextProfileSection = $"/users/user{userId}/profile_sections?fields=uri&page={profileSectionPage}&per_page=100"; nextProfileSection != null;)
-    {
-        Console.WriteLine($"Current page: {nextProfileSection}");
-        var profileSections = await GetAsync(nextProfileSection, AppJsonContext.Default.PagedDataProfileSection, cancellationToken) ??
-            throw new InvalidOperationException("Failed to fetch a page of profile sections.")
-            {
-                HelpLink = nextProfileSection
-            };
-        foreach (var p in profileSections.Data)
-        {
-            for (var nextVideos = $"{p.Uri}/videos?fields=clip.name%2Cclip.config_url&page={videosPage}&per_page=100"; nextVideos != null;)
-            {
-                Console.WriteLine($"Current page: {nextVideos}");
-                var videos = await GetAsync(nextVideos, AppJsonContext.Default.PagedDataClip_, cancellationToken) ??
-                    throw new InvalidOperationException("Failed to fetch a page of videos.")
-                    {
-                        HelpLink = nextVideos
-                    };
-                foreach (var v in videos.Data)
-                {
-                    var id = Patterns.VideoId().Match(v.Clip.ConfigUrl).Value;
-                    var title = v.Clip.Name.Replace(':', '：').Replace('/', '／');
-                    var filename = $"{id}={title}";
-                    if (File.Exists(filename + ".vtt") || File.Exists(filename) || File.Exists(filename + ".m4a"))
-                    {
-                        Console.WriteLine($"Skip {filename}");
-                        continue;
-                    }
-                    var config = await GetAsync(v.Clip.ConfigUrl, AppJsonContext.Default.Config, cancellationToken) ??
-                        throw new InvalidOperationException("Failed to fetch config for a video.")
-                        {
-                            HelpLink = v.Clip.ConfigUrl
-                        };
-                    var profile = config.Request.Files.Progressive.MaxBy(p => p.Profile) ??
-                        throw new InvalidDataException("No progressive profile for a video.")
-                        {
-                            HelpLink = v.Clip.ConfigUrl
-                        };
-                    if (config is { Request.TextTracks: { } textTracks } && textTracks.FirstOrDefault(t => t is
-                        {
-                            Lang: "zh-TW",
-                            Kind: "captions"
-                        }) is { Url: { } vtt })
-                    {
-                        yield return new($"{filename}.vtt", vtt);
-                    }
-                    yield return new(filename, profile.Url);
-                }
-                nextVideos = videos.Paging.Next;
-            }
-        }
-        nextProfileSection = profileSections.Paging.Next;
-    }
-}
-using var playerHttp = new HttpClient()
+using HttpClient playerHttp = new()
 {
     BaseAddress = new("https://player.vimeo.com")
 };
-await Parallel.ForEachAsync(EnumerateAsync(cts.Token), new ParallelOptions
+for (var nextProfileSection = $"/users/user{userId}/profile_sections?fields=uri&page={profileSectionPage}&per_page=100"; nextProfileSection != null;)
 {
-    CancellationToken = cts.Token,
-    MaxDegreeOfParallelism = Math.Min(8, Environment.ProcessorCount) // TODO: estimate base on available memory and bandwidth
-}, async (p, cancellationToken) =>
-{
-    if (File.Exists(p.Key + ".m4a"))
-    {
-        Console.WriteLine($"Found {p.Key}.m4a");
-    }
-    else if (File.Exists(p.Key))
-    {
-        Console.WriteLine($"Found {p.Key}");
-    }
-    else
-    {
-        Console.WriteLine($"Downloading {p.Key} from {p.Value}");
-        var t = '~' + p.Key;
-        bool isVideo = false;
-        try
+    Console.WriteLine($"Current page: {nextProfileSection}");
+    var profileSections = await GetAsync(nextProfileSection, AppJsonContext.Default.PagedDataProfileSection, cts.Token) ??
+        throw new InvalidOperationException("Failed to fetch a page of profile sections.")
         {
-            {
-                await using var file = File.Create(t);
-                using var response = await playerHttp.SendAsync(new(HttpMethod.Get, p.Value), HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-                await using var stream = await response.EnsureSuccessStatusCode().Content.ReadAsStreamAsync(cancellationToken);
-                await stream.CopyToAsync(file, CancellationToken.None);
-                isVideo = response.Content.Headers.ContentType is { MediaType: "video/mp4" };
-            }
-            File.Move(t, p.Key);
-        }
-        catch (Exception ex)
+            HelpLink = nextProfileSection
+        };
+    foreach (var p in profileSections.Data)
+    {
+        for (var nextVideos = $"{p.Uri}/videos?fields=clip.name%2Cclip.config_url&page={videosPage}&per_page=100"; nextVideos != null;)
         {
-            Console.Error.WriteLine($"Error downloading {p.Key}{Environment.NewLine}{ex}");
-            File.Delete(t);
-        }
-        if (isVideo)
-        {
-            try
-            {
-                t = p.Key + ".m4a";
-                using var ffmpeg = Process.Start(new ProcessStartInfo("ffmpeg", ["-i", p.Key, "-vn", "-c", "copy", t])
+            Console.WriteLine($"Current page: {nextVideos}");
+            var videos = await GetAsync(nextVideos, AppJsonContext.Default.PagedDataClip_, cts.Token) ??
+                throw new InvalidOperationException("Failed to fetch a page of videos.")
                 {
-                    UseShellExecute = false
-                });
-                await ffmpeg!.WaitForExitAsync(CancellationToken.None);
-                if (ffmpeg.ExitCode == 0)
+                    HelpLink = nextVideos
+                };
+            foreach (var v in videos.Data)
+            {
+                var id = Patterns.VideoId().Match(v.Clip.ConfigUrl).Value;
+                var title = v.Clip.Name.Replace(':', '：').Replace('/', '／');
+                var filename = $"{id}={title}";
+                if (File.Exists(filename + ".m4a"))
                 {
-
-                    File.Delete(p.Key);
+                    Console.WriteLine($"Skip {filename}");
+                    continue;
                 }
+                var config = await GetAsync(v.Clip.ConfigUrl, AppJsonContext.Default.Config, cts.Token) ??
+                    throw new InvalidOperationException("Failed to fetch config for a video.")
+                    {
+                        HelpLink = v.Clip.ConfigUrl
+                    };
+                if (!(config is { Request.Files.Dash: { Cdns: { } cdns, DefaultCdn: { } defaultCdn } } &&
+                    cdns.TryGetValue(defaultCdn, out var cdn) && cdn.Url is { } masterUrl))
+                {
+                    throw new InvalidDataException("No default DASH CDN for a video.")
+                    {
+                        HelpLink = v.Clip.ConfigUrl
+                    };
+                }
+                await Task.WhenAll(!File.Exists(filename + ".vtt") &&
+                    config is { Request.TextTracks: { } textTracks } && textTracks.FirstOrDefault(t => t is
+                    {
+                        Lang: "zh-TW",
+                        Kind: "captions"
+                    }) is { Url: { } vtt }
+                    ? Task.Run(async () =>
+                    {
+                        var path = $"{filename}.vtt";
+                        var tmp = path + '~';
+                        {
+                            await using var file = File.Create(tmp);
+                            using var stream = await playerHttp.GetStreamAsync(vtt, cts.Token);
+                            await stream.CopyToAsync(file, CancellationToken.None);
+                        }
+                        File.Delete(path);
+                        File.Move(tmp, path);
+                    }, cts.Token)
+                    : Task.CompletedTask,
+                    Task.Run(async () =>
+                    {
+                        var master = await playerHttp.GetFromJsonAsync(masterUrl, AppJsonContext.Default.DashMaster, cts.Token) ??
+                            throw new InvalidDataException("No DASH master for a video.")
+                            {
+                                HelpLink = masterUrl
+                            };
+                        var audio = master.Audio.MaxBy(a => a.AvgBitrate) ??
+                            throw new InvalidDataException("No audio for a video.")
+                            {
+                                HelpLink = masterUrl
+                            };
+                        var path = $"{filename}.m4a";
+                        var tmp = $"{filename}.m4s";
+                        {
+                            await using var file = File.Create(tmp);
+                            await file.WriteAsync(audio.InitSegment, CancellationToken.None);
+                            Uri baseUrl = new(new(new(masterUrl), master.BaseUrl), audio.BaseUrl);
+                            foreach (var download in audio.Segments.Select(s => playerHttp.GetByteArrayAsync(new Uri(baseUrl, s.Url), cts.Token)).ToList())
+                            {
+                                await file.WriteAsync(await download, CancellationToken.None);
+                            }
+                        }
+                        try
+                        {
+                            using Process ffmpeg = new()
+                            {
+                                StartInfo = new("ffmpeg", ["-y", "-i", tmp, "-vn", "-c", "copy", path])
+                                {
+                                    UseShellExecute = false,
+                                    RedirectStandardError = true,
+                                    StandardErrorEncoding = Encoding.UTF8
+                                },
+                                EnableRaisingEvents = true
+                            };
+                            StringBuilder sb = new();
+                            ffmpeg.ErrorDataReceived += (s, e) => sb.Append(e.Data);
+                            _ = ffmpeg.Start();
+                            await ffmpeg.WaitForExitAsync(CancellationToken.None);
+                            if (ffmpeg.ExitCode == 0)
+                            {
+                                File.Delete(tmp);
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException(sb.ToString());
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.Error.WriteLine($"Error extracting audio from {tmp}{Environment.NewLine}{ex}");
+                        }
+                    }, cts.Token));
             }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error removing video from {p.Key}{Environment.NewLine}{ex}");
-                File.Delete(t);
-            }
+            nextVideos = videos.Paging.Next;
         }
-        Console.WriteLine("Complete");
     }
-});
+    nextProfileSection = profileSections.Paging.Next;
+}
 
-sealed record class JWT(string Token);
-sealed record class Paging(string First, string Last, string? Next, string? Previous);
-sealed record class ProfileSection(string Uri);
-sealed record class Clip(string Name, string ConfigUrl);
-sealed record class Clip_(Clip Clip);
-sealed record class PagedData<T>(ICollection<T> Data, int Page, Paging Paging, int PerPage, int Total);
-sealed record class Progressive(string Profile, string Url);
-sealed record class Files(ICollection<Progressive> Progressive);
-sealed record class TextTrack(string Lang, string Url, string Kind);
-sealed record class Request(Files Files, ICollection<TextTrack>? TextTracks = null);
-sealed record class Video(int Id, string Title);
-sealed record class Config(Request Request, Video Video);
+sealed record JWT(string Token);
+sealed record Paging(string First, string Last, string? Next, string? Previous);
+sealed record ProfileSection(string Uri);
+sealed record Clip(string Name, string ConfigUrl);
+sealed record Clip_(Clip Clip);
+sealed record PagedData<T>(ICollection<T> Data, int Page, Paging Paging, int PerPage, int Total);
+sealed partial record DashCdn(string AvcUrl, string Origin, string Url);
+sealed record DashProfile(string Profile, Guid Id, float Fps, string Quality);
+sealed record Dash(Dictionary<string, DashCdn> Cdns, string DefaultCdn, bool SeparateAv, ICollection<DashProfile> Streams, ICollection<DashProfile> StreamsAvc);
+sealed record Files(Dash Dash);
+sealed record TextTrack(string Lang, string Url, string Kind);
+sealed record Request(Files Files, ICollection<TextTrack>? TextTracks = null);
+sealed record Video(int Id, string Title);
+sealed record Config(Request Request, Video Video);
+sealed record DashSegment(double Start, double End, string Url, int Size);
+sealed record DashVideoStream(string Id, string AvgId, string BaseUrl, string Format, string MimeType, string Codecs, int Bitrate, int AvgBitrate, double Duration, double Framerate, int Width, int Height, int MaxSegmentDuration, ReadOnlyMemory<byte> InitSegment, IList<DashSegment> Segments);
+sealed record DashAudioStream(string Id, string AvgId, string BaseUrl, string Format, string MimeType, string Codecs, int Bitrate, int AvgBitrate, double Duration, int Channels, int MaxSegmentDuration, ReadOnlyMemory<byte> InitSegment, IList<DashSegment> Segments, bool AudioPrimary);
+sealed record DashMaster(Guid ClipId, string BaseUrl, ICollection<DashVideoStream> Video, ICollection<DashAudioStream> Audio);
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower)]
 [JsonSerializable(typeof(JWT))]
 [JsonSerializable(typeof(PagedData<ProfileSection>))]
 [JsonSerializable(typeof(PagedData<Clip_>))]
 [JsonSerializable(typeof(Config))]
+[JsonSerializable(typeof(DashMaster))]
 sealed partial class AppJsonContext : JsonSerializerContext { }
 
 static partial class Patterns

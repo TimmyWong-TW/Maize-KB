@@ -13,11 +13,13 @@
             fetch(location.hash.substring(1)).then(response => response.json()),
             fetch("https://corsproxy.io/?" + encodeURIComponent(`https://player.vimeo.com/video/${vimeoId}/config`))
                 .then(response => response.json())
-                .then(({ request: { files: { progressive } } }) => new Promise((resolve, reject) => {
-                    const audio = new Audio(progressive.reduce((a, b) => b.profile > a.profile ? a : b, {}).url);
+                .then(({ request: { files: { hls: { cdns, default_cdn } } } }) => new Promise((resolve, reject) => {
+                    const audio = new Audio(), hls = new Hls();
                     audio.controls = true;
                     audio.addEventListener("canplaythrough", e => resolve(e.target));
-                    audio.addEventListener("error", e => reject(e.error));
+                    audio.addEventListener("error", e => reject(e.target.error));
+                    hls.loadSource(cdns[default_cdn].url);
+                    hls.attachMedia(audio);
                     return audio;
                 }))
         ]), transcript = segments.map(({ text, start, end, words }) => {
