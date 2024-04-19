@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "YouTubeDownloader": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

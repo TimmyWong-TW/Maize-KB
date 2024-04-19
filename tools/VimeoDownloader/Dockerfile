@@ -4,7 +4,7 @@ USER app
 WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/nightly/sdk:8.0-alpine-aot AS build
-RUN apk add clang zlib-dev
+RUN apk add --no-cache clang zlib-dev
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["VimeoDownloader/VimeoDownloader.csproj", "VimeoDownloader/"]

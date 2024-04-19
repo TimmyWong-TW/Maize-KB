@@ -9,10 +9,26 @@
       File names begin with video ID followed by the title after an equal sign, with path characters converted to full-width.
 - YouTube
   - [淡江教會-國度影音](https://www.youtube.com/channel/UCTvOJF2jWzrSOCXuXI-pgNQ)
+    - [聖經師資初階培訓](https://www.youtube.com/playlist?list=PLe-YK1dmFUsLnnUV54cwFLCc8nXP2TUvz)
+    - [以弗所書](https://www.youtube.com/playlist?list=PLe-YK1dmFUsL0j_THqhwbZFpj0BuXdpJj)
+    - ……
   - [淡江教會淡水堂](https://www.youtube.com/channel/UCx6fUQUflVPgUbkY7GWJMwg)
+    - [2024 主日崇拜](https://www.youtube.com/playlist?list=PLV4YZBS1Bq3dQXmB8dx0Ex6w6dMfs0SW4)
+    - [2023 主日崇拜](https://www.youtube.com/playlist?list=PLV4YZBS1Bq3dmq9ApN3-b2uTICgKJCnVj)
+    - [2022 主日崇拜](https://www.youtube.com/playlist?list=PLV4YZBS1Bq3dMGy_e4c-H0K0M9n9uCl3e)
+    - [2021 主日崇拜](https://www.youtube.com/playlist?list=PLV4YZBS1Bq3ep6HtFzrNjmFPupiZbnL_P)
+    - [2020 主日崇拜](https://www.youtube.com/playlist?list=PLV4YZBS1Bq3eJ7LOUUEh_0dAXnKePUWd2)
   - [淡江教會淡海堂](https://www.youtube.com/channel/UC-6ac1QQifgsvXhFpL_wnZw)
+    - [2024 主日崇拜](https://www.youtube.com/playlist?list=PLyCjLfWbz6idH6SzBO02YED9Bb-3GqnWp)
+    - [2023 主日崇拜](https://www.youtube.com/playlist?list=PLyCjLfWbz6iehtHyI_DT_EVeatcwF4YgL)
+    - [2022 主日崇拜](https://www.youtube.com/playlist?list=PLyCjLfWbz6icBuJAbYAlPwl6pl6TKPFK5)
+    - [2021 主日崇拜](https://www.youtube.com/playlist?list=PLyCjLfWbz6ifHFuXI4BNkboMVpkcR_q-T)
   - [淡江教會桃園堂](https://www.youtube.com/channel/UCcdIbQvRl8i6tEuKiYQgMAw)
+    - [2024 主日崇拜](https://www.youtube.com/playlist?list=PL9BI9uMgbGFdUu4r8tU3P04LGANbXjGaF)
+    - [2023 主日崇拜](https://www.youtube.com/playlist?list=PL9BI9uMgbGFcWX50Cr_CAysMp4NECsa6j)
+    - [2022 主日崇拜](https://www.youtube.com/playlist?list=PL9BI9uMgbGFdpwyDZx3nxSRcCDsEQQGCY)
   - [淡江教會高雄堂](https://www.youtube.com/channel/UCXLpnJfevlM4Y57jIiQRuXg)
+    - [2024 主日崇拜](https://www.youtube.com/playlist?list=PLLIqo6dtvjwOx0QjCZWfaZsmphSHLNRtS)
 
 ## 擷取方法 Retrieval Methodology
 注意：以下筆記僅供參考，並非實際記錄完整步驟。  
@@ -27,8 +43,19 @@ docker compose build
 1. 大量下載音頻及字幕。  
    Bulk download audios and captions.
    ```sh
-   docker compose run --rm -d vimeo-downloader
+   docker compose run --rm -d -w /data/source/vimeo/淡江教會 -e USER_ID=2178983 vimeo-downloader
    ```
+   ```sh
+   docker compose run --rm -d -e PLAYLIST_ID=PLe-YK1dmFUsLnnUV54cwFLCc8nXP2TUvz youtube-dl
+   docker compose run --rm -d -e PLAYLIST_ID=PLe-YK1dmFUsL0j_THqhwbZFpj0BuXdpJj youtube-dl
+   # ……
+   docker compose run --rm -d -e PLAYLIST_ID=PLV4YZBS1Bq3dQXmB8dx0Ex6w6dMfs0SW4 youtube-dl
+   docker compose run --rm -d -e PLAYLIST_ID=PLV4YZBS1Bq3dmq9ApN3-b2uTICgKJCnVj youtube-dl
+   docker compose run --rm -d -e PLAYLIST_ID=PLV4YZBS1Bq3dMGy_e4c-H0K0M9n9uCl3e youtube-dl
+   docker compose run --rm -d -e PLAYLIST_ID=PLV4YZBS1Bq3ep6HtFzrNjmFPupiZbnL_P youtube-dl
+   docker compose run --rm -d -e PLAYLIST_ID=PLV4YZBS1Bq3eJ7LOUUEh_0dAXnKePUWd2 youtube-dl
+   ```
+   ……
 1. 若來源缺乏字幕，辨識漢語以生成中文文本並對齊音頻時間。  
    When source lacks captions, transcribe Mandarin to Chinese and align with audio.  
    如預算許可則考慮使用更佳模型。  

@@ -25,15 +25,14 @@ services:
       dockerfile: VimeoDownloader/Dockerfile
     volumes:
       - ../:/data
-    working_dir: /data/source/vimeo/淡江教會
-    environment:
-      USER_ID: '2178983'
-      PROFILE_SECTION_PAGE: '1'
-      VIDEOS_PAGE: '1'
-    deploy:
-      resources:
-        limits:
-          cpus: '8.0' # limit parallel downloads, adjust by available memory and bandwidth
+  youtube-dl:
+    scale: 0
+    image: ${DOCKER_REGISTRY-}youtube-dl
+    build:
+      context: .
+      dockerfile: youtube-dl/Dockerfile
+    volumes:
+      - ../:/data
   transcriber:
     scale: 0
     build:
@@ -43,7 +42,7 @@ services:
       - huggingface:/root/.cache/huggingface
       - ../:/data
     entrypoint: /bin/bash -O globstar -c
-    command: whisperx --model large-v3 --output_format json --task transcribe --language zh --align_model StevenLimcorn/wav2vec2-xls-r-300m-zh-TW --initial_prompt "弟兄姊妹平安，我們一起來思想。繁體中文，臺灣國語。" --output_dir /data/whisperx /data/source/**/*.m4a
+    command: whisperx --model large-v3 --output_format json --task transcribe --language zh --align_model StevenLimcorn/wav2vec2-xls-r-300m-zh-TW --initial_prompt "弟兄姊妹平安，我們一起來思想。繁體中文，臺灣國語。" --output_dir /data/whisperx /data/source/**/*.{m4a,opus}
     deploy:
       resources:
         reservations:
@@ -96,5 +95,6 @@ services:
 volumes:
   huggingface:
     external: true
+
 
 

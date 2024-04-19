@@ -14,7 +14,26 @@
         "embedder": "StartWithoutDebugging",
         "embedder-cache": "DoNotStart",
         "whisperx-json-trimmer": "DoNotStart",
-        "resegmenter": "DoNotStart"
+        "resegmenter": "DoNotStart",
+        "youtube-downloader": "DoNotStart"
+      }
+    },
+    "YouTubeDownloader": {
+      "commandName": "DockerCompose",
+      "commandVersion": "1.0",
+      "composeLaunchAction": "None",
+      "composeLaunchServiceName": "vimeo-downloader",
+      "serviceActions": {
+        "chinese-converter": "DoNotStart",
+        "transcriber": "DoNotStart",
+        "vimeo-downloader": "DoNotStart",
+        "semantic-chunker": "DoNotStart",
+        "descriptor": "DoNotStart",
+        "embedder": "StartWithoutDebugging",
+        "embedder-cache": "DoNotStart",
+        "whisperx-json-trimmer": "DoNotStart",
+        "resegmenter": "DoNotStart",
+        "youtube-downloader": "StartDebugging"
       }
     },
     "Transcriber": {
@@ -29,7 +48,8 @@
         "embedder": "StartWithoutDebugging",
         "embedder-cache": "DoNotStart",
         "whisperx-json-trimmer": "DoNotStart",
-        "resegmenter": "DoNotStart"
+        "resegmenter": "DoNotStart",
+        "youtube-downloader": "DoNotStart"
       }
     },
     "Resegmenter": {
@@ -46,7 +66,8 @@
         "semantic-chunker": "DoNotStart",
         "transcriber": "DoNotStart",
         "vimeo-downloader": "DoNotStart",
-        "whisperx-json-trimmer": "DoNotStart"
+        "whisperx-json-trimmer": "DoNotStart",
+        "youtube-downloader": "DoNotStart"
       }
     },
     "ChineseConverter": {
@@ -61,7 +82,8 @@
         "embedder": "StartWithoutDebugging",
         "embedder-cache": "DoNotStart",
         "whisperx-json-trimmer": "DoNotStart",
-        "resegmenter": "DoNotStart"
+        "resegmenter": "DoNotStart",
+        "youtube-downloader": "DoNotStart"
       }
     },
     "SemanticChunker": {
@@ -78,7 +100,8 @@
         "transcriber": "DoNotStart",
         "vimeo-downloader": "DoNotStart",
         "whisperx-json-trimmer": "DoNotStart",
-        "resegmenter": "DoNotStart"
+        "resegmenter": "DoNotStart",
+        "youtube-downloader": "DoNotStart"
       }
     }
   }

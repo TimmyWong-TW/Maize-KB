@@ -9,7 +9,9 @@ Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose", "docker-co
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SemanticChunker", "SemanticChunker\SemanticChunker.csproj", "{1B18F316-F0EE-4371-9D80-FC7D870704C7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Resegmenter", "Resegmenter\Resegmenter.csproj", "{BA03F412-56A8-46F4-9B77-153244C854DE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Resegmenter", "Resegmenter\Resegmenter.csproj", "{BA03F412-56A8-46F4-9B77-153244C854DE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "YouTubeDownloader", "YouTubeDownloader\YouTubeDownloader.csproj", "{4CC309CF-F482-4559-9443-44C611B3F34D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{BA03F412-56A8-46F4-9B77-153244C854DE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BA03F412-56A8-46F4-9B77-153244C854DE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BA03F412-56A8-46F4-9B77-153244C854DE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4CC309CF-F482-4559-9443-44C611B3F34D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4CC309CF-F482-4559-9443-44C611B3F34D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4CC309CF-F482-4559-9443-44C611B3F34D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4CC309CF-F482-4559-9443-44C611B3F34D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
