@@ -41,8 +41,7 @@ services:
     volumes:
       - huggingface:/root/.cache/huggingface
       - ../:/data
-    entrypoint: /bin/bash -O globstar -c
-    command: whisperx --model large-v3 --output_format json --task transcribe --language zh --align_model StevenLimcorn/wav2vec2-xls-r-300m-zh-TW --initial_prompt "弟兄姊妹平安，我們一起來思想。繁體中文，臺灣國語。" --output_dir /data/whisperx /data/source/**/*.{m4a,opus}
+    entrypoint: /bin/bash -O globstar -c "whisperx --model large-v3 --output_format json --task transcribe --language zh --align_model StevenLimcorn/wav2vec2-xls-r-300m-zh-TW --initial_prompt '弟兄姊妹平安，我們一起來思想。繁體中文，臺灣國語。' --output_dir /data/whisperx /data/source/**/*.{m4a,opus}"
     deploy:
       resources:
         reservations:
@@ -95,6 +94,3 @@ services:
 volumes:
   huggingface:
     external: true
-
-
-

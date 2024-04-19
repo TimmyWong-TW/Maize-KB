@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/nightly/runtime:8.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/runtime:8.0-alpine AS base
 RUN apk add ffmpeg
 USER app
 WORKDIR /app

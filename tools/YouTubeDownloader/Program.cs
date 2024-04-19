@@ -1,8 +1,10 @@
-﻿using System.Net.Http.Json;
+﻿using Jurassic;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Web;
 using YouTube;
 
 string playlistId = Environment.GetEnvironmentVariable("PLAYLIST_ID") ??
@@ -22,17 +24,41 @@ Console.OutputEncoding = Encoding.UTF8;
 using HttpClient http = new()
 {
     BaseAddress = new("https://www.youtube.com")
+    // TODO: avoid throttling?
 };
+Func<string, string> sign;
+{
+    ScriptEngine scriptEngine = new();
+    scriptEngine.Execute("g={};" +
+        "navigator={};" +
+        "location={hostname:'www.youtube.com'};" +
+        "XMLHttpRequest={prototype:{fetch:function(){}}};" +
+        "document={referrer:''};"
+    );
+    var js = await http.GetStringAsync($"/s/player/{Patterns.Player().Match(await http.GetStringAsync("/iframe_api", cts.Token)).Value}/player_ias.vflset/en_US/base.js");
+    var scope = js[js.IndexOf('{', js.IndexOf(';') + 1)..js.LastIndexOf(')', js.LastIndexOf("_yt_player") - 1)];
+    var decipher = Patterns.Decipher().Match(scope);
+    scriptEngine.Execute(scope);
+    sign = cipher =>
+    {
+        var q = HttpUtility.ParseQueryString(cipher);
+        return $"{q["url"]}&{q["sp"]}={scriptEngine.Evaluate($"{decipher}('{q["s"]}')")}";
+    };
+}
+
+#if DEBUG
+await DownloadAsync(http, "rDec3PRu8G4", sign, cancellationToken: cts.Token);
+;
+#endif
 
 // TODO: enumerate videos in a playlist
-var html = await http.GetStringAsync($"/playlist?list={playlistId}");
+var html = await http.GetStringAsync($"/playlist?list={playlistId}", cts.Token);
 var playlist = JsonSerializer.Deserialize(Patterns.YtInitialData().Match(html).Value, AppJsonContext.Default.PlaylistResponse) ??
     throw new InvalidOperationException("Failed to fetch playlist initially.");
 var csi = playlist.ResponseContext.ServiceTrackingParams.First(p => p.Service == "CSI").Params.ToDictionary(p => p.Key, p => p.Value);
 ;
 
-// TODO: decipher signature for non-embeddable
-static async Task DownloadEmbeddableAsync(HttpClient http, string videoId, string? basePath = null, CancellationToken cancellationToken = default)
+static async Task DownloadAsync(HttpClient http, string videoId, Func<string, string> sign, string? basePath = null, CancellationToken cancellationToken = default)
 {
     using var response = await http.PostAsJsonAsync("/youtubei/v1/player?prettyPrint=false", new PlayerRequest(videoId), AppJsonContext.Default.PlayerRequest, cancellationToken);
     using var content = response.EnsureSuccessStatusCode().Content;
@@ -75,7 +101,7 @@ static async Task DownloadEmbeddableAsync(HttpClient http, string videoId, strin
                 .OrderByDescending(f => f.AudioQuality)
                 .ThenBy(f => f.ContentLength)
                 .First();
-            var url = format.Url; // TODO decipher
+            var url = format.Url ?? sign(format.SignatureCipher!);
             var type = format.MimeType[6..format.MimeType.IndexOf(';', 7)];
             type = type switch
             {
@@ -130,9 +156,10 @@ sealed record PlaylistContent(TwoColumnBrowseResultsRenderer TwoColumnBrowseResu
 sealed record PlaylistResponse(PlaylistResponseContext ResponseContext, PlaylistContent Contents);
 
 sealed record PlayerRequestContextClient(string ClientName = "WEB_EMBEDDED_PLAYER", string ClientVersion = "1.20240415.01.00");
-sealed record PlayerRequestContext(PlayerRequestContextClient Client)
+sealed record ThirdParty(string EmbedUrl = "https://google.com");
+sealed record PlayerRequestContext(PlayerRequestContextClient Client, ThirdParty ThirdParty)
 {
-    public PlayerRequestContext() : this(new PlayerRequestContextClient()) { }
+    public PlayerRequestContext() : this(new(), new()) { }
 }
 sealed record PlayerRequest(string VideoId, PlayerRequestContext Context)
 {
@@ -170,6 +197,12 @@ sealed partial class AppJsonContext : JsonSerializerContext { }
 
 static partial class Patterns
 {
-    [GeneratedRegex(@"(?<=\bytInitialData\s*=\s*){.+?}(?=;?\s*<\/script>)", RegexOptions.Singleline)]
+    [GeneratedRegex("""(?<=\bytInitialData\s*=\s*){.+?}(?=;?\s*<\/script>)""", RegexOptions.Singleline)]
     internal static partial Regex YtInitialData();
+
+    [GeneratedRegex("""(?<=\bplayer\\?/)[^\\/]+""")]
+    internal static partial Regex Player();
+
+    [GeneratedRegex("""(?<=\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*)[a-zA-Z0-9$]+(?=\()|(?<=\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*)[a-zA-Z0-9$]+(?=\()|(?<=\bm=)[a-zA-Z0-9$]{2,}(?=\(decodeURIComponent\(h\.s\)\))|(?<=\bc&&\(c=)[a-zA-Z0-9$]{2,}(?=\(decodeURIComponent\(c\)\))|(?<=\b|[^a-zA-Z0-9$])[a-zA-Z0-9$]{2,}(?=\s*=\s*function\(\s*a\s*\)\s*{\s*a\s*=\s*a\.split\(\s*""\s*\)(?:;[a-zA-Z0-9$]{2}\.[a-zA-Z0-9$]{2}\(a,\d+\))?)|[a-zA-Z0-9$]+(?=\s*=\s*function\(\s*a\s*\)\s*{\s*a\s*=\s*a\.split\(\s*""\s*\))|(?<=("|')signature\1\s*,\s*)[a-zA-Z0-9$]+(?=\()|(?<=\.sig\|\|)[a-zA-Z0-9$]+(?=\()|(?<=yt\.akamaized\.net/\)\s*\|\|\s*.*?\s*[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?:encodeURIComponent\s*\()?\s*)[a-zA-Z0-9$]+(?=\()|(?<=\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*)[a-zA-Z0-9$]+(?=\()|(?<=\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*)[a-zA-Z0-9$]+(?=\()|(?<=\bc\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*)[a-zA-Z0-9$]+(?=\()""")]
+    internal static partial Regex Decipher();
 }
