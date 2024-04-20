@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 using System.Web;
 using YouTube;
 
+const int ChunkSize = 10 << 20;
+
 string playlistId = Environment.GetEnvironmentVariable("PLAYLIST_ID") ??
 #if DEBUG
     "PLe-YK1dmFUsLP91e4OhcDqnqK_0smrmaL";
@@ -24,7 +26,6 @@ Console.OutputEncoding = Encoding.UTF8;
 using HttpClient http = new()
 {
     BaseAddress = new("https://www.youtube.com")
-    // TODO: avoid throttling?
 };
 Func<string, string> sign;
 {
@@ -37,12 +38,22 @@ Func<string, string> sign;
     );
     var js = await http.GetStringAsync($"/s/player/{Patterns.Player().Match(await http.GetStringAsync("/iframe_api", cts.Token)).Value}/player_ias.vflset/en_US/base.js");
     var scope = js[js.IndexOf('{', js.IndexOf(';') + 1)..js.LastIndexOf(')', js.LastIndexOf("_yt_player") - 1)];
-    var decipher = Patterns.Decipher().Match(scope);
+    var decipher = Patterns.SDecipher().Match(scope).Value;
+    var ema = Patterns.NDecipher().Match(scope).Value;
     scriptEngine.Execute(scope);
     sign = cipher =>
     {
-        var q = HttpUtility.ParseQueryString(cipher);
-        return $"{q["url"]}&{q["sp"]}={scriptEngine.Evaluate($"{decipher}('{q["s"]}')")}";
+        var p = HttpUtility.ParseQueryString(cipher);
+        UriBuilder u = new(p.GetValues("url")?.LastOrDefault() ?? throw new ArgumentException("No URL in cipher.", nameof(cipher)));
+        var q = HttpUtility.ParseQueryString(u.Query);
+        if (q.GetValues("n")?.LastOrDefault() is { } n)
+        {
+            q.Set("n", (string)scriptEngine.Evaluate($"{ema}('{n}')"));
+        }
+        q.Set(p.GetValues("sp")?.LastOrDefault() ?? throw new ArgumentException("No signature parameter in cipher."),
+            (string)scriptEngine.Evaluate($"{decipher}('{p.GetValues("s")?.LastOrDefault() ?? throw new ArgumentException("No signature in cipher.")}')"));
+        u.Query = q.ToString();
+        return u.ToString();
     };
 }
 
@@ -113,8 +124,11 @@ static async Task DownloadAsync(HttpClient http, string videoId, Func<string, st
             var t = path + '~';
             {
                 await using var file = File.Create(t);
-                await using var stream = await http.GetStreamAsync(url, cancellationToken);
-                await stream.CopyToAsync(file, cancellationToken);
+                foreach (var task in Enumerable.Range(0, Math.DivRem(format.ContentLength, ChunkSize, out var r) is { } chunks && r != 0 ? chunks + 1 : chunks)
+                    .Select(i => http.GetByteArrayAsync($"{url}&range={i * ChunkSize}-{Math.Min((i + 1) * ChunkSize - 1, format.ContentLength)}", cancellationToken)).ToList())
+                {
+                    await file.WriteAsync(await task, cancellationToken);
+                }
             }
             File.Delete(path);
             File.Move(t, path);
@@ -155,7 +169,7 @@ sealed record TwoColumnBrowseResultsRenderer(ICollection<Tab> Tabs);
 sealed record PlaylistContent(TwoColumnBrowseResultsRenderer TwoColumnBrowseResultsRenderer);
 sealed record PlaylistResponse(PlaylistResponseContext ResponseContext, PlaylistContent Contents);
 
-sealed record PlayerRequestContextClient(string ClientName = "WEB_EMBEDDED_PLAYER", string ClientVersion = "1.20240415.01.00");
+sealed record PlayerRequestContextClient(string ClientName = "TVHTML5_SIMPLY_EMBEDDED_PLAYER", string ClientVersion = "2.0");
 sealed record ThirdParty(string EmbedUrl = "https://google.com");
 sealed record PlayerRequestContext(PlayerRequestContextClient Client, ThirdParty ThirdParty)
 {
@@ -174,7 +188,7 @@ enum AudioQuality
     AUDIO_QUALITY_MEDIUM,
     AUDIO_QUALITY_HIGH
 }
-sealed record AdaptiveFormat(int Itag, string MimeType,
+sealed record AdaptiveFormat(int Itag, string MimeType, int Bitrate, int AverageBitrate,
     [property: JsonNumberHandling(JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.WriteAsString)] int ContentLength,
     AudioQuality AudioQuality
 )
@@ -204,5 +218,8 @@ static partial class Patterns
     internal static partial Regex Player();
 
     [GeneratedRegex("""(?<=\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*)[a-zA-Z0-9$]+(?=\()|(?<=\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*encodeURIComponent\s*\(\s*)[a-zA-Z0-9$]+(?=\()|(?<=\bm=)[a-zA-Z0-9$]{2,}(?=\(decodeURIComponent\(h\.s\)\))|(?<=\bc&&\(c=)[a-zA-Z0-9$]{2,}(?=\(decodeURIComponent\(c\)\))|(?<=\b|[^a-zA-Z0-9$])[a-zA-Z0-9$]{2,}(?=\s*=\s*function\(\s*a\s*\)\s*{\s*a\s*=\s*a\.split\(\s*""\s*\)(?:;[a-zA-Z0-9$]{2}\.[a-zA-Z0-9$]{2}\(a,\d+\))?)|[a-zA-Z0-9$]+(?=\s*=\s*function\(\s*a\s*\)\s*{\s*a\s*=\s*a\.split\(\s*""\s*\))|(?<=("|')signature\1\s*,\s*)[a-zA-Z0-9$]+(?=\()|(?<=\.sig\|\|)[a-zA-Z0-9$]+(?=\()|(?<=yt\.akamaized\.net/\)\s*\|\|\s*.*?\s*[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*(?:encodeURIComponent\s*\()?\s*)[a-zA-Z0-9$]+(?=\()|(?<=\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*)[a-zA-Z0-9$]+(?=\()|(?<=\b[a-zA-Z0-9]+\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*)[a-zA-Z0-9$]+(?=\()|(?<=\bc\s*&&\s*[a-zA-Z0-9]+\.set\([^,]+\s*,\s*\([^)]*\)\s*\(\s*)[a-zA-Z0-9$]+(?=\()""")]
-    internal static partial Regex Decipher();
+    internal static partial Regex SDecipher();
+
+    [GeneratedRegex("""(?<=\.get\("n"\)\)&&\(b=)[a-zA-Z0-9$]+(?:\[\d+\])?(?=\([a-zA-Z0-9]\))""")]
+    internal static partial Regex NDecipher();
 }
