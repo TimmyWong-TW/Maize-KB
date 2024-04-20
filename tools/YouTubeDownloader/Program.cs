@@ -107,30 +107,44 @@ static async Task DownloadAsync(HttpClient http, string videoId, Func<string, st
             {
                 throw new InvalidDataException("No audio for a video.");
             }
-            var format = formats
-                .Where(f => f is { MimeType: ['a', 'u', 'd', 'i', 'o', '/', ..] })
-                .OrderByDescending(f => f.AudioQuality)
-                .ThenBy(f => f.ContentLength)
-                .First();
+            var (format, type, _) = formats
+                .Where(f => f is { MimeType: { } m } && m.StartsWith("audio/", StringComparison.Ordinal))
+                .Select(f =>
+                {
+                    var a = f.MimeType[6..f.MimeType.IndexOf(';', 7)];
+                    return (f, a, i: a switch
+                    {
+                        "mp4" => 0,
+                        "webm" => 1,
+                        _ => -1
+                    });
+                })
+                .Aggregate((max, current) =>
+                    current.f.AudioQuality > max.f.AudioQuality ||
+                    current.f.AudioQuality == max.f.AudioQuality && (
+                        current.i > max.i ||
+                        current.i == max.i && current.f.Bitrate > max.f.Bitrate
+                    ) ? current : max
+                );
             var url = format.Url ?? sign(format.SignatureCipher!);
-            var type = format.MimeType[6..format.MimeType.IndexOf(';', 7)];
-            type = type switch
+            var path = Path.Join(basePath, $"{filename}.{type switch
             {
                 "webm" => "weba",
                 "mp4" => "m4a",
                 _ => type
-            };
-            var path = Path.Join(basePath, $"{filename}.{type}");
+            }}");
             var t = path + '~';
             {
                 await using var file = File.Create(t);
-                foreach (var task in Enumerable.Range(0, Math.DivRem(format.ContentLength, ChunkSize, out var r) is { } chunks && r != 0 ? chunks + 1 : chunks)
-                    .Select(i => http.GetByteArrayAsync($"{url}&range={i * ChunkSize}-{Math.Min((i + 1) * ChunkSize - 1, format.ContentLength)}", cancellationToken)).ToList())
+                var size = format.ContentLength;
+                foreach (var task in Enumerable.Range(0, Math.DivRem(size, ChunkSize, out var r) is { } chunks && r != 0 ? chunks + 1 : chunks)
+                    .Select(i => http.GetByteArrayAsync($"{url}&range={i * ChunkSize}-{Math.Min((i + 1) * ChunkSize - 1, size)}", cancellationToken)).ToList())
                 {
                     await file.WriteAsync(await task, cancellationToken);
                 }
             }
             File.Delete(path);
+            // TODO: convert weba to opus?
             File.Move(t, path);
         }, cancellationToken)
     );
