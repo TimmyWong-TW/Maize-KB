@@ -1,5 +1,6 @@
 ﻿using Jurassic;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,6 +16,7 @@ string playlistId = Environment.GetEnvironmentVariable("PLAYLIST_ID") ??
 #else
     throw new InvalidOperationException("No playlist ID.");
 #endif
+string? basePath = Environment.GetEnvironmentVariable("OUT_DIR");
 
 CancellationTokenSource cts = new();
 Console.CancelKeyPress += (s, e) =>
@@ -27,6 +29,7 @@ using HttpClient http = new()
 {
     BaseAddress = new("https://www.youtube.com")
 };
+#region Signature
 Func<string, string> sign;
 {
     ScriptEngine scriptEngine = new();
@@ -56,18 +59,95 @@ Func<string, string> sign;
         return u.ToString();
     };
 }
+#endregion
 
-#if DEBUG
-await DownloadAsync(http, "rDec3PRu8G4", sign, cancellationToken: cts.Token);
-;
-#endif
+await foreach (var videoId in EnumeratePlaylistAsync(http, playlistId, cts.Token))
+{
+    await DownloadAsync(http, videoId, sign, basePath, cts.Token);
+}
 
-// TODO: enumerate videos in a playlist
-var html = await http.GetStringAsync($"/playlist?list={playlistId}", cts.Token);
-var playlist = JsonSerializer.Deserialize(Patterns.YtInitialData().Match(html).Value, AppJsonContext.Default.PlaylistResponse) ??
-    throw new InvalidOperationException("Failed to fetch playlist initially.");
-var csi = playlist.ResponseContext.ServiceTrackingParams.First(p => p.Service == "CSI").Params.ToDictionary(p => p.Key, p => p.Value);
-;
+static async IAsyncEnumerable<string> EnumeratePlaylistAsync(HttpClient http, string playlistId, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+{
+    var html = await http.GetStringAsync($"/playlist?list={playlistId}", cancellationToken);
+    if (JsonSerializer.Deserialize(Patterns.YtInitialData().Match(
+            await http.GetStringAsync($"/playlist?list={playlistId}", cancellationToken)
+        ).Value, AppJsonContext.Default.PlaylistResponse) is not
+        {
+            ResponseContext.ServiceTrackingParams: { Count: > 0 } stp,
+            Contents.TwoColumnBrowseResultsRenderer.Tabs: [
+                {
+                    TabRenderer.Content.SectionListRenderer.Contents: [
+                    { ItemSectionRenderer.Contents: { } items },
+                    {
+                        ContinuationItemRenderer.ContinuationEndpoint:
+                        {
+                            CommandMetadata.WebCommandMetadata.ApiUrl: { },
+                            ContinuationCommand.Token: { }
+                        } continuation
+                    }]
+                }
+            ]
+        })
+    {
+        throw new InvalidDataException("Failed to fetch playlist initially.");
+    }
+    string? clientName = null, clientVersion = null;
+    foreach (var p in stp.First(p => p.Service == "CSI").Params)
+    {
+        switch (p.Key)
+        {
+            case "c":
+                clientName = p.Value;
+                break;
+            case "cver":
+                clientVersion = p.Value;
+                break;
+        }
+    }
+    if (clientName is null || clientVersion is null)
+    {
+        throw new InvalidDataException("Missing params in CSI.");
+    }
+    Stack<ContinuationEndpoint> continuations = new();
+    continuations.Push(continuation);
+    for (var contents = items.SelectMany(i => i.PlaylistVideoListRenderer.Contents); ;)
+    {
+        if (contents is not null)
+        {
+            foreach (var c in contents)
+            {
+                if (c is { PlaylistVideoRenderer.VideoId: { } v })
+                {
+                    yield return v;
+                }
+                else if (c is
+                {
+                    ContinuationItemRenderer.ContinuationEndpoint:
+                    {
+                        CommandMetadata.WebCommandMetadata.ApiUrl: { },
+                        ContinuationCommand.Token: { }
+                    } e
+                })
+                {
+                    continuations.Push(e);
+                }
+            }
+        }
+        if (!continuations.TryPop(out continuation))
+        {
+            break;
+        }
+        using var response = await http.PostAsJsonAsync(continuation.CommandMetadata.WebCommandMetadata.ApiUrl,
+            new(new(new(clientName, clientVersion)), continuation.ContinuationCommand.Token),
+            AppJsonContext.Default.PlaylistRequest, cancellationToken);
+        var playlist = await response.EnsureSuccessStatusCode().Content.ReadFromJsonAsync(AppJsonContext.Default.PlaylistResponse, cancellationToken) ??
+            throw new InvalidOperationException("Failed to continue fetching playlist.")
+            {
+                HelpLink = continuation.CommandMetadata.WebCommandMetadata.ApiUrl
+            };
+        contents = playlist.OnResponseReceivedActions?.SelectMany(a => a.AppendContinuationItemsAction.ContinuationItems);
+    }
+}
 
 static async Task DownloadAsync(HttpClient http, string videoId, Func<string, string> sign, string? basePath = null, CancellationToken cancellationToken = default)
 {
@@ -150,6 +230,15 @@ static async Task DownloadAsync(HttpClient http, string videoId, Func<string, st
     );
 }
 
+sealed record RequestContextClient(string ClientName = "TVHTML5_SIMPLY_EMBEDDED_PLAYER", string ClientVersion = "2.0");
+sealed record WebCommandMetadata(bool SendPost, string ApiUrl);
+sealed record CommandMetadata(WebCommandMetadata WebCommandMetadata);
+sealed record ContinuationCommand(string Token);
+sealed record ContinuationEndpoint(CommandMetadata CommandMetadata, ContinuationCommand ContinuationCommand);
+sealed record ContinuationItemRenderer(ContinuationEndpoint ContinuationEndpoint);
+
+sealed record PlaylistRequestContext(RequestContextClient Client);
+sealed record PlaylistRequest(PlaylistRequestContext Context, string Continuation);
 sealed record Param(string Key, string Value);
 sealed record ServiceTrackingParams(string Service, ICollection<Param> Params);
 sealed record PlaylistResponseContext(ICollection<ServiceTrackingParams> ServiceTrackingParams);
@@ -162,30 +251,31 @@ sealed record Title(ICollection<Run> Runs)
     public override string ToString() => string.Join(null, Runs);
 }
 sealed record PlaylistVideoRenderer(string VideoId, Title Title);
-sealed record PlaylistVideoListRenderer(ICollection<PlaylistVideoRenderer> Contents);
+sealed record PlaylistVideoListContent
+{
+    public PlaylistVideoRenderer? PlaylistVideoRenderer { get; init; }
+    public ContinuationItemRenderer? ContinuationItemRenderer { get; init; }
+}
+sealed record PlaylistVideoListRenderer(ICollection<PlaylistVideoListContent> Contents);
 sealed record ItemSectionContent(PlaylistVideoListRenderer PlaylistVideoListRenderer);
 sealed record ItemSectionRenderer(ICollection<ItemSectionContent> Contents);
-sealed record WebCommandMetadata(bool SendPost, string ApiUrl);
-sealed record CommandMetadata(WebCommandMetadata WebCommandMetadata);
-sealed record ContinuationCommand(string Token);
-sealed record ContinuationEndpoint(CommandMetadata CommandMetadata, ContinuationCommand ContinuationCommand);
-sealed record ContinuationItemRenderer(ContinuationEndpoint ContinuationEndpoint);
 sealed record SectionListContent()
 {
     public ItemSectionRenderer? ItemSectionRenderer { get; init; }
     public ContinuationItemRenderer? ContinuationItemRenderer { get; init; }
 }
-sealed record SectionListRenderer(ICollection<SectionListContent> Contents);
+sealed record SectionListRenderer(IList<SectionListContent> Contents);
 sealed record TabContent(SectionListRenderer SectionListRenderer);
 sealed record TabRenderer(TabContent Content);
 sealed record Tab(TabRenderer TabRenderer);
-sealed record TwoColumnBrowseResultsRenderer(ICollection<Tab> Tabs);
+sealed record TwoColumnBrowseResultsRenderer(IList<Tab> Tabs);
 sealed record PlaylistContent(TwoColumnBrowseResultsRenderer TwoColumnBrowseResultsRenderer);
-sealed record PlaylistResponse(PlaylistResponseContext ResponseContext, PlaylistContent Contents);
+sealed record AppendContinuationItemsAction(ICollection<PlaylistVideoListContent> ContinuationItems);
+sealed record OnResponseReceivedAction(AppendContinuationItemsAction AppendContinuationItemsAction);
+sealed record PlaylistResponse(PlaylistResponseContext ResponseContext, PlaylistContent Contents, ICollection<OnResponseReceivedAction> OnResponseReceivedActions);
 
-sealed record PlayerRequestContextClient(string ClientName = "TVHTML5_SIMPLY_EMBEDDED_PLAYER", string ClientVersion = "2.0");
 sealed record ThirdParty(string EmbedUrl = "https://google.com");
-sealed record PlayerRequestContext(PlayerRequestContextClient Client, ThirdParty ThirdParty)
+sealed record PlayerRequestContext(RequestContextClient Client, ThirdParty ThirdParty)
 {
     public PlayerRequestContext() : this(new(), new()) { }
 }
@@ -218,6 +308,7 @@ sealed record PlayerResponse(StreamingData StreamingData, VideoDetails VideoDeta
 }
 
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, UseStringEnumConverter = true)]
+[JsonSerializable(typeof(PlaylistRequest))]
 [JsonSerializable(typeof(PlaylistResponse))]
 [JsonSerializable(typeof(PlayerRequest))]
 [JsonSerializable(typeof(PlayerResponse))]
