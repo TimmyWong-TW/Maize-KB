@@ -7,7 +7,7 @@ Include API key for Google Generative AI in `tools/secrets.env` as `GOOGLE_AI_AP
 
 ```sh
 cd Maize-KB/tools
-docker compose --rm -d descriptor
+docker compose run --rm -d descriptor
 ```
 
 ## Exceptions

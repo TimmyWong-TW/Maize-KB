@@ -70,7 +70,13 @@ async function describe(text) {
     return result.response.text();
 }
 
-const skip = (await fs.readFile('/data/overview/error.log', 'utf-8')).split('\n');
+const skip = (await fs.readFile('/data/overview/error.log', 'utf-8').catch(e => {
+    if (e.errno === -2) {
+        return '';
+    } else {
+        throw e;
+    }
+})).split('\n');
 for (const tsv of glob.sync('/data/tsv/**/*.tsv')) {
     if (canceled) {
         console.error("Canceled");
