@@ -91,7 +91,6 @@ services:
     environment:
       EMBEDDER_HOST: http://embedder/
   translator:
-    scale: 0
     image: ${DOCKER_REGISTRY-}translator
     build:
       context: .
