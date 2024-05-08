@@ -8,7 +8,3 @@ services:
     scale: 1
   semantic-chunker:
     scale: 1
-  translator:
-    ports:
-      - 8775:80
-    entrypoint: python3 main.py

@@ -90,20 +90,6 @@ services:
       - ../:/data
     environment:
       EMBEDDER_HOST: http://embedder/
-  translator:
-    image: ${DOCKER_REGISTRY-}translator
-    build:
-      context: .
-      dockerfile: Translator/Dockerfile
-    volumes:
-      - huggingface:/root/.cache/huggingface
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [ gpu ]
 
 volumes:
   huggingface:
