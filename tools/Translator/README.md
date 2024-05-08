@@ -4,27 +4,27 @@
 
 Example:
 ```http
-POST /translate/zho_Hant/jpn_Jpan
+POST /translate/cmn_Hant/jpn
 Content-Type: application/json
 
 {"input":["第一句。","第二段。","第三片。"]}
 ```
 
-## [Languages in FLORES-200](https://github.com/facebookresearch/flores/blob/main/flores200/README.md#languages-in-flores-200)
+## [Seamless M4T v2 Languages](https://huggingface.co/facebook/seamless-m4t-v2-large#supported-languages)
 
-- `zho_Hant` 繁體中文
-- `yue_Hant` 粵語漢字
-- `zho_Hans` 残体中文
-- `eng_Latn` English
-- `kor_Hang` 南韓한굴
-- `jpn_Jpan` 日本語
-- `tha_Thai` 泰文
-- `ind_Latn` 印尼文
-- `swh_Latn` 史瓦希利文
-- `npi_Deva` 尼泊爾天城文
-- `ell_Grek` 希臘文
-- `heb_Hebr` 希伯來文
-- `fra_Latn` 法文
-- `deu_Latn` 德文
-- `khm_Khmr` 高棉文
+- `cmn_Hant` 繁體中文
+- `yue` 粵語漢字
+- `cmn` 残体中文
+- `eng` English
+- `kor` 南韓한굴
+- `jpn` 日本語
+- `tha` 泰文
+- `ind` 印尼文
+- `swh` 史瓦希利文
+- `npi` 尼泊爾天城文
+- `ell` 希臘文
+- `heb` 希伯來文
+- `fra` 法文
+- `deu` 德文
+- `khm` 高棉文
 - ……

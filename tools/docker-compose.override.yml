@@ -11,3 +11,4 @@ services:
   translator:
     ports:
       - 8775:80
+    entrypoint: python3 main.py
