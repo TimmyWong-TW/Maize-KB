@@ -4,27 +4,25 @@
 
 Example:
 ```http
-POST /translate/cmn_Hant/jpn
+POST /translate/zh/ja
 Content-Type: application/json
 
 {"input":["第一句。","第二段。","第三片。"]}
 ```
 
-## [Seamless M4T v2 Languages](https://huggingface.co/facebook/seamless-m4t-v2-large#supported-languages)
+## [M2M100 Languages](https://huggingface.co/facebook/m2m100_1.2B#languages-covered)
 
-- `cmn_Hant` 繁體中文
-- `yue` 粵語漢字
-- `cmn` 残体中文
-- `eng` English
-- `kor` 南韓한굴
-- `jpn` 日本語
-- `tha` 泰文
-- `ind` 印尼文
-- `swh` 史瓦希利文
-- `npi` 尼泊爾天城文
-- `ell` 希臘文
-- `heb` 希伯來文
-- `fra` 法文
-- `deu` 德文
-- `khm` 高棉文
+- `zh` 中文
+- `en` English
+- `ko` 南韓한굴
+- `ja` 日本語
+- `th` 泰文
+- `id` 印尼文
+- `sw` 史瓦希利文
+- `ne` 尼泊爾天城文
+- `el` 希臘文
+- `he` 希伯來文
+- `fr` 法文
+- `de` 德文
+- `km` 高棉文
 - ……
