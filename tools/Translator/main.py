@@ -1,14 +1,14 @@
 from flask import Flask, request, Response
-from transformers import M2M100Tokenizer, M2M100ForConditionalGeneration
+from transformers import MBart50TokenizerFast, MBartForConditionalGeneration
 import json
 import torch
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model_name = 'facebook/m2m100_1.2B'
+model_name = 'facebook/mbart-large-50-many-to-many-mmt'
 app = Flask(__name__)
 app.json.sort_keys = False
-tokenizer = M2M100Tokenizer.from_pretrained(model_name)
-model = M2M100ForConditionalGeneration.from_pretrained(model_name).to(device)
+tokenizer = MBart50TokenizerFast.from_pretrained(model_name)
+model = MBartForConditionalGeneration.from_pretrained(model_name).to(device)
 
 @app.route('/translate/<src>/<to>', methods=['POST'])
 def translate(src, to):
@@ -23,7 +23,7 @@ def translate(src, to):
                 yield ','
             sub = True
             inputs = tokenizer(i, return_tensors='pt').to(device)
-            one = tokenizer.batch_decode(model.generate(**inputs, forced_bos_token_id=tokenizer.get_lang_id(to)), skip_special_tokens=True)[0]
+            one = tokenizer.batch_decode(model.generate(**inputs, forced_bos_token_id=tokenizer.lang_code_to_id[to]), skip_special_tokens=True)[0]
             yield json.dumps(one)
         yield ']}'
 
