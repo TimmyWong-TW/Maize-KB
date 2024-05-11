@@ -1,0 +1,8 @@
+services:
+  embedding:
+    command: python3 main.py
+  qdrant:
+    ports:
+      - 7378:6333
+  ollama:
+    scale: 0

@@ -1,0 +1,76 @@
+version: '3.4'
+services:
+  txt:
+    scale: 0
+    image: ${DOCKER_REGISTRY-}txt
+    build:
+      context: .
+      dockerfile: txt/Dockerfile
+    volumes:
+      - ../tsv:/kb/tsv:ro
+      - ./kb/txt:/kb/txt
+  embedding:
+    image: ${DOCKER_REGISTRY-}embedding
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    build:
+      context: .
+      dockerfile: embedding/Dockerfile
+    volumes:
+      - huggingface-hub:/root/.cache/huggingface/hub
+  qdrant:
+    image: qdrant/qdrant:latest
+    deploy:
+      restart_policy:
+        condition: always
+    volumes:
+      - qdrant-storage:/qdrant/storage
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+      restart_policy:
+        condition: always
+    image: ollama/ollama:latest
+    volumes:
+      - ollama:/root/.ollama
+  open-webui:
+    scale: 0
+    image: ghcr.io/open-webui/open-webui:main
+    deploy:
+      restart_policy:
+        condition: always
+    volumes:
+      - open-webui:/app/backend/data
+    ports:
+      - 6984:8080
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+  flowise:
+    image: flowiseai/flowise:latest
+    deploy:
+      restart_policy:
+        condition: always
+    command: flowise start
+    ports:
+      - 3597:3000
+    env_file:
+      - flowise.env
+    volumes:
+      - flowise:/root/.flowise
+      - ./kb/txt:/kb/txt:ro
+volumes:
+  huggingface-hub:
+  qdrant-storage:
+  ollama:
+  open-webui:
+  flowise:

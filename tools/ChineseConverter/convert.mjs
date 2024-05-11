@@ -12,6 +12,8 @@ await Promise.all(glob.sync('/data/tsv/**/*.tsv').map(async tsv => {
                     a ? '祢' : b ? '面對' : c ? '里路' : d ? '只' : e ? '游' : f ? '准' : g ? '面向' : _)}`;
         })
     ].join('\n'));
-    await fs.unlink(tsv);
+    try {
+        await fs.unlink(tsv);
+    } catch { }
     await fs.rename(tmp, tsv);
 }));
