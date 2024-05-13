@@ -41,6 +41,8 @@ services:
       restart_policy:
         condition: always
     image: ollama/ollama:latest
+    environment:
+      OLLAMA_KEEP_ALIVE: '-1'
     volumes:
       - ollama:/root/.ollama
   open-webui:
@@ -63,6 +65,8 @@ services:
     command: flowise start
     ports:
       - 3597:3000
+    environment:
+      NUMBER_OF_PROXIES: '1'
     env_file:
       - flowise.env
     volumes:
