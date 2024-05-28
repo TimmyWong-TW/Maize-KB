@@ -1,6 +1,6 @@
 services:
   embedding:
-    command: python3 main.py
+    # command: python3 main.py
     ports:
       - 3623:80
   qdrant:

@@ -18,6 +18,8 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [ gpu ]
+      restart_policy:
+        condition: always
     build:
       context: .
       dockerfile: embedding/Dockerfile
