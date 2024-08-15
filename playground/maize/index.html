@@ -1,0 +1,78 @@
+<html lang="zh-TW">
+
+<head>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9CPKJZX7KE"></script>
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', 'G-9CPKJZX7KE');</script>
+    <title>小玉米 - 研經小伙伴 📖</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="title" content="🌽小玉米 - 研經小伙伴📖">
+    <meta name="description" content="🌽小玉米 - 研經小伙伴📖">
+    <meta name="keywords" content="小玉米, 研經, 淡江教會, 主日信息, 研經釋義">
+    <link rel="shortcut icon" href="maize.ico">
+    <link rel="icon" type="image/png" sizes="192x192" href="maize_192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="maize_512.png">
+    <link rel="apple-touch-icon" type="image/png" sizes="180x180" href="maize_180.png">
+</head>
+
+<body>
+    <flowise-fullchatbot></flowise-fullchatbot>
+    <script type="module">
+        import Chatbot from "https://cdn.jsdelivr.net/npm/flowise-embed/dist/web.js"
+        Chatbot.initFull({
+            chatflowid: "e5b9d503-b4fe-4e61-8f7f-af816e282409",
+            apiHost: "https://flowise.ai4.tw",
+            theme: {
+                chatWindow: {
+                    showTitle: true,
+                    title: '🌽小玉米 - 研經小伙伴📖',
+                    // titleAvatarSrc: 'maize_192.png',
+                    // showAgentMessages: true,
+                    welcomeMessage: '👋您好，我叫<b>🌽小玉米</b>，是聆聽了淡江教會十多年來的影片的AI👀<br>😊當您問我研經問題時，我會嘗試從影片內容選出一些語意相關的段落，加以整理然後嘗試回應<br><small>📃回應下方會列出我參考過的逐字稿段落<br>😅如果我產生的內容有誤，請善用回饋功能讓真人跟進🙏不必跟AI爭辯，因為每段對話都是我的新分身，互相沒有記憶</small>',
+                    errorMessage: '抱歉，我累了🫠請稍候再試',
+                    backgroundColor: "#333333",
+                    // height: 700,
+                    // width: 400,
+                    fontSize: 16,
+                    poweredByTextColor: "#4A90E2",
+                    botMessage: {
+                        backgroundColor: "#804030",
+                        textColor: "#FFFFFF",
+                        showAvatar: true,
+                        avatarSrc: "maize_192.png",
+                    },
+                    userMessage: {
+                        backgroundColor: "#417505",
+                        textColor: "#FFFFFF",
+                        // showAvatar: true,
+                        // avatarSrc: "https://raw.githubusercontent.com/zahidkhawaja/langchain-chat-nextjs/main/public/usericon.png",
+                    },
+                    textInput: {
+                        placeholder: '輸入討論問題……',
+                        backgroundColor: '#000000',
+                        textColor: '#FFFFFF',
+                        sendButtonColor: '#B8E986',
+                        maxChars: 140,
+                        maxCharsWarningMessage: '太長了啦🙈一步一步來好嗎？',
+                        // autoFocus: true, // If not used, autofocus is disabled on mobile and enabled on desktop. true enables it on both, false disables it on both.
+                        // sendMessageSound: true,
+                        // sendSoundLocation: "send_message.mp3", // If this is not used, the default sound effect will be played if sendSoundMessage is true.
+                        // receiveMessageSound: true,
+                        // receiveSoundLocation: "receive_message.mp3", // If this is not used, the default sound effect will be played if receiveSoundMessage is true. 
+                    },
+                    feedback: {
+                        color: '#4A90E2',
+                    },
+                    footer: {
+                        textColor: '#4A90E2',
+                        text: '營運商:',
+                        company: '添美網事業 (統一編號: 92704370)',
+                        companyLink: 'https://ai4.tw',
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
